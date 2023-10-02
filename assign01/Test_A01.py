@@ -9,7 +9,7 @@ import subprocess as sub
 import cv2
 import numpy as np
 import pandas as pd
-import General_Testing as GT
+import CS_470_primusr.assign01.General_Testing as GT
 import A01
 
 base_dir = "assign01"
