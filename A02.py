@@ -4,14 +4,15 @@ import gradio as gr
 
 def read_kernel_file(filepath):
     with open(filepath, 'r') as file:
-        line = file.readline()
-        tokens = line.split()
-        row_count, col_count = int(tokens[0]), int(tokens[1])
-        kernel = np.zeros((row_count, col_count), dtype=float)
+        firstLine = file.readline()
+        tokens = firstLine.split()
+        rowCnt= int(tokens[0])
+        colCnt = int(tokens[1])
+        kernel = np.zeros((rowCnt, colCnt), dtype=float)
 
         index = 2
-        for row in range(row_count):
-            for col in range(col_count):
+        for row in range(rowCnt):
+            for col in range(colCnt):
                 kernel[row, col] = float(tokens[index])
                 index += 1
 
@@ -19,20 +20,21 @@ def read_kernel_file(filepath):
 
 def apply_filter(image, kernel, alpha=1.0, beta=0.0, convert_uint8=True):
     image = image.astype(np.float64)
+    kernel = kernel.astype(np.float64)
     kernel = cv2.flip(kernel, -1)
-    kernel_height, kernel_width = kernel.shape
+    kernelHeight, kernelWidth = kernel.shape
 
-    padding = (kernel_height // 2, kernel_width // 2)
-    padded_image = cv2.copyMakeBorder(image, padding[0], padding[0], padding[1], padding[1], cv2.BORDER_CONSTANT, value=0)
+    padding = (kernelHeight // 2, kernelWidth // 2)
+    paddedImage = cv2.copyMakeBorder(image, padding[0], padding[0], padding[1], padding[1], cv2.BORDER_CONSTANT, value=0)
 
     output = np.zeros_like(image, dtype=np.float64)
-    image_height, image_width = image.shape
+    imageHeight, imageWidth = image.shape
 
-    for row in range(image_height):
-        for col in range(image_width):
-            sub_image = padded_image[row:row + kernel_height, col:col + kernel_width]
-            filter_vals = sub_image * kernel
-            value = np.sum(filter_vals)
+    for row in range(imageHeight):
+        for col in range(imageWidth):
+            subImage = paddedImage[row : (row + kernel.shape[0]), col : (col + kernel.shape[1])]
+            filtervals = subImage * kernel
+            value = np.sum(filtervals)
             output[row, col] = value
 
     if convert_uint8:
