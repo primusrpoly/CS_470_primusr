@@ -6,7 +6,7 @@ def read_kernel_file(filepath):
     with open(filepath, 'r') as file:
         firstLine = file.readline()
         tokens = firstLine.split()
-        rowCnt= int(tokens[0])
+        rowCnt = int(tokens[0])
         colCnt = int(tokens[1])
         kernel = np.zeros((rowCnt, colCnt), dtype=float)
 
@@ -22,6 +22,7 @@ def apply_filter(image, kernel, alpha=1.0, beta=0.0, convert_uint8=True):
     image = image.astype(np.float64)
     kernel = kernel.astype(np.float64)
     kernel = cv2.flip(kernel, -1)
+    
     kernelHeight, kernelWidth = kernel.shape
 
     padding = (kernelHeight // 2, kernelWidth // 2)
