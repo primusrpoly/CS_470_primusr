@@ -4,23 +4,29 @@ from General_A04 import *
 
 # step 1: return the correct lbp label
 def getOneLBPLabel(subimage, label_type):
-    # get neighbors, put them in 1d array
+    # create 1D array
     center_value = subimage[1, 1]
-    binary_values = (subimage > center_value).astype(np.uint8)
-    binary_string = ''.join(map(str, binary_values.flatten()))
+    binary_string = ""
+  
+    # get binary representation based on thresholding
+    for i in range(3):
+        for j in range(3):
+            if subimage[i, j] > center_value:
+                binary_string += "1"
+            else:
+                binary_string += "0"
 
-    # count transitions to determine uniformity
-    transitions = 0
-    previous_bit = binary_string[-1]
-
-    for bit in binary_string:
-        if bit != previous_bit:
-            transitions += 1
-
-    if transitions <= 2:
-        return transitions
+    # check if it's a uniform pattern
+    if label_type == LBP_LABEL_TYPES.UNIFORM:
+        # sum up the uniform pattern values
+        label = sum_digits(binary_string)
+        return label
     else:
-        return 9
+        # junk label 9
+        return 9 
+    
+def sum_digits(binary_string):
+    return sum(int(x) for x in binary_string)
     
 # step 2: return uniform lbp label image
 def getLBPImage(image, label_type):
@@ -39,8 +45,6 @@ def getLBPImage(image, label_type):
 
 # step 3: return correct lbp histogram
 def getOneRegionLBPFeatures(subImage, label_type):
-
-
     unique_labels, counts = np.unique(subImage, return_counts=True)
     histogram = np.zeros(10, dtype=np.float32)
     
