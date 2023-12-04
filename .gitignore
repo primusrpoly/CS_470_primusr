@@ -5,3 +5,5 @@
 __pycache__/
 Pipfile.lock
 data/
+assign05/output/model_CNN0.pth
+assign05/output/model_CNN1.pth
