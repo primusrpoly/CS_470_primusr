@@ -58,7 +58,7 @@ class CNN1_Network(nn.Module):
             
             nn.Flatten(),
             
-            nn.Linear(4096, 32),
+            nn.Linear(2048, 32),
             nn.ReLU(),
             nn.Linear(32, class_cnt)
         )
