@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 import cv2
 import numpy as np
 import os
+from sklearn.model_selection import train_test_split
 
 class CNN0_Network(nn.Module):
     def __init__(self, class_cnt):
@@ -50,13 +51,14 @@ class CNN1_Network(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(2),
 
-            nn.Conv2d(64, 128, 3, padding="same"),  # Additional convolutional layer
+            # Additional convolutional layer
+            nn.Conv2d(64, 128, 3, padding="same"),
             nn.ReLU(),
             nn.MaxPool2d(2),
             
             nn.Flatten(),
             
-            nn.Linear(128 * 4 * 4, 32),  # Adjust the input size for the additional layer
+            nn.Linear(4096, 32),
             nn.ReLU(),
             nn.Linear(32, class_cnt)
         )
@@ -82,34 +84,28 @@ def get_data_transform(approach_name, training):
     # Return the appropriate data transform based on approach_name and training flag
     if approach_name == "CNN0":
         if training:
-            # Add data augmentation for training
-            data_transform = v2.Compose([
-                v2.RandomHorizontalFlip(),
-                v2.RandomResizedCrop(32),
-                v2.ToImageTensor(),
-                v2.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-            ])
-        else:
-            # For validation and testing, perform standard transformation
+            # Data augmentation for training
             data_transform = v2.Compose([
                 v2.ToImageTensor(), 
-                v2.ConvertDtype()]) 
+                v2.ConvertImageDtype()]) 
+        else:
+            # Data augmentation for test
+            data_transform = v2.Compose([
+                v2.ToImageTensor(), 
+                v2.ConvertImageDtype()]) 
         return data_transform
     
     if approach_name == "CNN1":
         if training:
-            # Add data augmentation for training
-            data_transform = v2.Compose([
-                v2.RandomHorizontalFlip(),
-                v2.RandomResizedCrop(32),
-                v2.ToImageTensor(),
-                v2.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-            ])
-        else:
-            # For validation and testing, perform standard transformation
+            # Data augmentation for training
             data_transform = v2.Compose([
                 v2.ToImageTensor(), 
-                v2.ConvertDtype()]) 
+                v2.ConvertImageDtype()]) 
+        else:
+            # Data augmentation for test
+            data_transform = v2.Compose([
+                v2.ToImageTensor(), 
+                v2.ConvertImageDtype()]) 
         return data_transform
 
 def get_batch_size(approach_name):
@@ -131,63 +127,75 @@ def create_model(approach_name, class_cnt):
         return None
 
 def train_model(approach_name, model, device, train_dataloader, test_dataloader):
+    # Training the model based on approach
+    if approach_name == "CNN0":
 
-    if approach_name == "CNN0": 
-        # Train the model using the provided dataloaders and return the trained model
         loss_fn = nn.CrossEntropyLoss()
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-
-        # Train for a number of epochs (you can adjust this)
-        total_epochs = 2
-        
-        for epoch in range(total_epochs):
-            print("** EPOCH", (epoch+1), "**")
-            train_model(model, loss_fn, optimizer, device, 
-                            train_dataloader)
-
-        # Optionally print and evaluate on test_dataloader
-        model.eval()
-        correct = 0
-        total = 0
-        with torch.no_grad():
-            for inputs, labels in test_dataloader:
-                inputs, labels = inputs.to(device), labels.to(device)
-                outputs = model(inputs)
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
-
-        accuracy = correct / total
-        print("Accuracy on test set: ", {accuracy})
-
-        return model
+        optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     
-    if approach_name == "CNN1": 
-        # Train the model using the provided dataloaders and return the trained model
-        loss_fn = nn.CrossEntropyLoss()
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-
-        # Train for a number of epochs (you can adjust this)
         total_epochs = 20
-        
+
         for epoch in range(total_epochs):
             print("** EPOCH", (epoch+1), "**")
-            train_model(model, loss_fn, optimizer, device, 
-                            train_dataloader)
+            train(model, loss_fn, optimizer, device, train_dataloader)
+            test(model, loss_fn, device, train_dataloader, "TRAIN")
+            test(model, loss_fn, device, test_dataloader, "TEST")
+        
+    if approach_name == "CNN1": 
+        
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    
+        total_epochs = 20
 
-        # Optionally print and evaluate on test_dataloader
-        model.eval()
-        correct = 0
-        total = 0
-        with torch.no_grad():
-            for inputs, labels in test_dataloader:
-                inputs, labels = inputs.to(device), labels.to(device)
-                outputs = model(inputs)
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
+        for epoch in range(total_epochs):
+            print("** EPOCH", (epoch+1), "**")
+            train(model, loss_fn, optimizer, device, train_dataloader)
+            test(model, loss_fn, device, train_dataloader, "TRAIN")
+            test(model, loss_fn, device, test_dataloader, "TEST")
 
-        accuracy = correct / total
-        print("Accuracy on test set: ", {accuracy})
+    return model
+            
+def train(model, loss_fn, optimizer, device, train_dataloader):
+    # Train the model using train dataloader and return the trained model
+    size = len(train_dataloader)
+    model.train()
+    
+    for batch, (X,y) in enumerate(train_dataloader):
+        X = X.to(device)
+        y = y.to(device)
+        
+        pred = model(X)
+        loss = loss_fn(pred, y)
+        
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+        
+        if batch%100 == 0:
+            loss = loss.item()
+            index = (batch+1)*len(X)
+            print(index, "of", size, ": Loss =", loss)
 
-        return model
+def test(model, loss_fn, device, test_dataloader, dataname):
+    # Test the model using test dataloader and return the trained model
+    size = len(test_dataloader)
+    num_batches = len(test_dataloader)
+    model.eval()
+    
+    test_loss = 0
+    correct = 0
+    
+    with torch.no_grad():
+        for X,y in test_dataloader:
+            X = X.to(device)
+            y = y.to(device)
+            pred = model(X)
+            test_loss += loss_fn(pred, y).item()
+            correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+        test_loss /= num_batches
+        correct /= size
+    
+    print(dataname, ":")
+    print("\tAccuracy:", correct)
+    print("\tLoss:", test_loss)

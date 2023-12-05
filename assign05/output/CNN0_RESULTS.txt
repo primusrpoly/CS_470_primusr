@@ -9,7 +9,7 @@ APPROACHES:
 RESULTS:
 ****************************************
 APPROACH	TRAINING_accuracy	TRAINING_f1	TESTING_accuracy	TESTING_f1
-CNN0	0.1000	0.0182	0.1000	0.0182
+CNN0	0.9442	0.9438	0.7329	0.7312
 
 ****************************************
 MODEL ARCHITECTURES:
