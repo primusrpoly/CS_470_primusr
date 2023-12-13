@@ -9,15 +9,20 @@ def getOneLBPLabel(subimage, label_type):
     binary_string = ""
   
     # get binary representation based on thresholding
-    for i in range(3):
-        for j in range(3):
-            if subimage[i, j] > center_value:
-                binary_string += "1"
-            else:
-                binary_string += "0"
+    pos = [(0,0), (0,1), (0,2), (1,2), (2,2), (2,1), (2,0), (1,0)]
+    for i,j in pos:
+        if subimage[i, j] > center_value:
+            binary_string += "1"
+        else:
+            binary_string += "0"
 
     # check if it's a uniform pattern
-    if label_type == LBP_LABEL_TYPES.UNIFORM:
+    M = 0
+    for i in range(1, len(binary_string)):
+        if binary_string[i] != binary_string[i-1]:
+            M += 1    
+    
+    if M <= 2:
         # sum up the uniform pattern values
         label = sum_digits(binary_string)
         return label
